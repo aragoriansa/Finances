@@ -29,6 +29,7 @@
     </style>
 </head>
 <body>
+
 <div class="box">
     <h2>📊 Финансов Дневник (€)</h2>
     <div class="row">
@@ -44,7 +45,17 @@
             <option value="Октомври">Октомври</option><option value="Ноември">Ноември</option><option value="Декември">Декември</option>
         </select>
     </div>
-    <div style="margin-bottom: 12px;"><input type="number" id="amount" placeholder="Въведи приход (€)" min="0" step="0.01"></div>
+    
+    <div class="row">
+        <select id="category">
+            <option value="Заплата">💼 Заплата</option>
+            <option value="Пенсия">👴 Пенсия</option>
+            <option value="Социални">🏛️ Социални</option>
+            <option value="Бонус">🎁 Бонус</option>
+        </select>
+        <input type="number" id="amount" placeholder="Сума (€)" min="0" step="0.01">
+    </div>
+    
     <button id="submit-btn" onclick="addIncome()">ЗАПИШИ СУМА</button>
 
     <h2>📈 Сравнение по Години</h2>
@@ -58,50 +69,59 @@
     <div id="months-container">
         <h2>✏️ Списък по Месеци (Сравнение)</h2>
         <table>
-            <thead><tr><th>Месец / Година</th><th>Сума</th><th>Спрямо м.г.</th><th>Действие</th></tr></thead>
+            <thead><tr><th>Месец / Година</th><th>Източник</th><th>Сума</th><th>Спрямо м.г.</th><th>Действие</th></tr></thead>
             <tbody id="entries-table"></tbody>
         </table>
     </div>
 
-    <h2>📊 Месечно разпределение за:</h2>
-    <div style="margin-bottom: 10px;"><select id="filter-chart-year" onchange="updateUI()"></select></div>
+    <h2>📊 Статистика за година:</h2>
+    <div style="margin-bottom: 10px;">
+        <select id="filter-chart-year" onchange="updateUI()"></select>
+    </div>
+    
+    <h3>📈 Трендове по месеци</h3>
     <div class="chart-wrap"><canvas id="monthlyChart"></canvas></div>
+    
+    <h3>🔵 Разпределение по източници</h3>
+    <div class="chart-wrap" style="height: 250px;"><canvas id="pieChart"></canvas></div>
 
     <button class="clear-btn" onclick="clearData()">ИЗЧИСТИ ВСИЧКО</button>
-</div>
-<script>
+</div><script>
     let incomes = JSON.parse(localStorage.getItem('financial_diary')) || [];
-    let myChart = null; let mChart = null; let editIndex = null;
+    let myChart = null; let mChart = null; let pChart = null; let editIndex = null;
     const mOrder = ["Януари", "Февруари", "Март", "Април", "Май", "Юни", "Юли", "Август", "Септември", "Октомври", "Ноември", "Декември"];
 
     function addIncome() {
         const year = document.getElementById('year').value;
         const month = document.getElementById('month').value;
+        const category = document.getElementById('category').value;
         const amount = parseFloat(document.getElementById('amount').value);
         if (isNaN(amount) || amount <= 0) { alert("Въведете сума!"); return; }
 
         if (editIndex !== null) {
-            incomes[editIndex] = { year, month, amount };
+            incomes[editIndex] = { year, month, category, amount };
             editIndex = null;
             document.getElementById('submit-btn').innerText = "ЗАПИШИ СУМА";
         } else {
-            const idx = incomes.findIndex(i => i.year === year && i.month === month);
+            const idx = incomes.findIndex(i => i.year === year && i.month === month && i.category === category);
             if (idx !== -1) {
-                if(confirm("Има запис. Да добавя ли сумата?")) incomes[idx].amount += amount;
+                if(confirm(`Има запис за ${category} през този месец. Да добавя ли сумата?`)) incomes[idx].amount += amount;
                 else return;
-            } else { incomes.push({ year, month, amount }); }
+            } else { incomes.push({ year, month, category, amount }); }
         }
         localStorage.setItem('financial_diary', JSON.stringify(incomes));
-        updateYearDropdowns(); updateUI();
+        updateYearDropdowns(); 
+        updateUI();
         document.getElementById('amount').value = '';
     }
 
     function editEntry(uid) {
-        const idx = incomes.findIndex(i => (i.year + '-' + i.month) === uid);
+        const idx = incomes.findIndex(i => (i.year + '-' + i.month + '-' + i.category) === uid);
         if (idx === -1) return;
         editIndex = idx;
         document.getElementById('year').value = incomes[idx].year;
         document.getElementById('month').value = incomes[idx].month;
+        document.getElementById('category').value = incomes[idx].category;
         document.getElementById('amount').value = incomes[idx].amount;
         document.getElementById('submit-btn').innerText = "ОБНОВИ ЗАПИСА";
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -109,8 +129,8 @@
 
     function deleteEntry(uid) {
         if (confirm("Изтриване?")) {
-            const idx = incomes.findIndex(i => (i.year + '-' + i.month) === uid);
-            if (idx !== -1) { incomes.splice(idx, 1); localStorage.setItem('financial_diary', JSON.stringify(incomes)); updateUI(); }
+            const idx = incomes.findIndex(i => (i.year + '-' + i.month + '-' + i.category) === uid);
+            if (idx !== -1) { incomes.splice(idx, 1); localStorage.setItem('financial_diary', JSON.stringify(incomes)); updateYearDropdowns(); updateUI(); }
         }
     }
 
@@ -125,8 +145,9 @@
         let years = [...new Set(incomes.map(i => i.year))].sort();
         if (years.length === 0) years = ["2026"];
         sel.innerHTML = '';
-        years.forEach(y => { sel.innerHTML += `<option value="${y}" ${y === curr ? 'selected' : ''}>${y} г.</option>`; });
-        if (!curr && sel.firstChild) sel.firstChild.setAttribute('selected', 'selected');
+        years.forEach(y => { sel.innerHTML += `<option value="${y}">${y} г.</option>`; });
+        if (curr && years.includes(curr)) sel.value = curr;
+        else sel.value = years[years.length - 1];
     }
 
     function updateUI() {
@@ -152,21 +173,28 @@
         });
 
         const tEntries = document.getElementById('entries-table'); tEntries.innerHTML = '';
+        let monthlySum = {}; 
+        incomes.forEach(i => {
+            let key = i.year + '-' + i.month;
+            monthlySum[key] = (monthlySum[key] || 0) + i.amount;
+        });
+
         incomes.forEach((e) => {
             const pYear = (parseInt(e.year) - 1).toString();
-            const pMatch = incomes.find(i => i.year === pYear && i.month === e.month);
+            const currentMonthSum = monthlySum[e.year + '-' + e.month] || 0;
+            const prevMonthSum = monthlySum[pYear + '-' + e.month] || 0;
             let mTrend = '---';
-            if (pMatch && pMatch.amount > 0) {
-                const mDiff = ((e.amount - pMatch.amount) / pMatch.amount) * 100;
+            if (prevMonthSum > 0) {
+                const mDiff = ((currentMonthSum - prevMonthSum) / prevMonthSum) * 100;
                 mTrend = mDiff > 0 ? `<span class="badge badge-up">▲ +${mDiff.toFixed(1)}%</span>` : `<span class="badge badge-down">▼ ${mDiff.toFixed(1)}%</span>`;
             }
-            const uid = `${e.year}-${e.month}`;
-            tEntries.innerHTML += `<tr><td>${e.month} ${e.year} г.</td><td><strong>${e.amount.toFixed(2)} €</strong></td><td>${mTrend}</td><td><button class="btn-edit" onclick="editEntry('${uid}')">✏️</button><button class="btn-del" onclick="deleteEntry('${uid}')">🗑️</button></td></tr>`;
+            const uid = `${e.year}-${e.month}-${e.category}`;
+            tEntries.innerHTML += `<tr><td>${e.month} ${e.year} г.</td><td>${e.category}</td><td><strong>${e.amount.toFixed(2)} €</strong></td><td>${mTrend}</td><td><button class="btn-edit" onclick="editEntry('${uid}')">✏️</button><button class="btn-del" onclick="deleteEntry('${uid}')">🗑️</button></td></tr>`;
         });
 
         if (incomes.length === 0) {
             tStats.innerHTML = `<tr><td colspan="3" style="text-align:center;">Няма данни.</td></tr>`;
-            tEntries.innerHTML = `<tr><td colspan="4" style="text-align:center;">Няма добавени месеци.</td></tr>`;
+            tEntries.innerHTML = `<tr><td colspan="5" style="text-align:center;">Няма добавени месеци.</td></tr>`;
         }
 
         if (myChart) myChart.destroy();
@@ -181,21 +209,38 @@
 
         const sYear = document.getElementById('filter-chart-year').value || "2026";
         let mData = Array(12).fill(0);
-        incomes.forEach(i => { if (i.year === sYear) { const mIdx = mOrder.indexOf(i.month); if (mIdx !== -1) mData[mIdx] = i.amount; } });
+        incomes.forEach(i => { if (i.year === sYear) { const mIdx = mOrder.indexOf(i.month); if (mIdx !== -1) mData[mIdx] += i.amount; } });
 
         if (mChart) mChart.destroy();
         mChart = new Chart(document.getElementById('monthlyChart').getContext('2d'), {
             type: 'line',
             data: {
                 labels: mOrder.map(m => m.substring(0, 3)),
-                datasets: [{ label: `За ${sYear} г. (€)`, data: mData, backgroundColor: 'rgba(2, 132, 199, 0.1)', borderColor: '#0284c7', borderWidth: 3, tension: 0.3, fill: true }]
+                datasets: [{ label: `Приход (€)`, data: mData, backgroundColor: 'rgba(2, 132, 199, 0.1)', borderColor: '#0284c7', borderWidth: 3, tension: 0.3, fill: true }]
+            },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+
+        let catTotals = { "Заплата": 0, "Пенсия": 0, "Социални": 0, "Бонус": 0 };
+        incomes.forEach(i => { if (i.year === sYear) { catTotals[i.category] = (catTotals[i.category] || 0) + i.amount; } });
+
+        if (pChart) pChart.destroy();
+        pChart = new Chart(document.getElementById('pieChart').getContext('2d'), {
+            type: 'pie',
+            data: {
+                labels: Object.keys(catTotals),
+                datasets: [{
+                    data: Object.values(catTotals),
+                    backgroundColor: ['#2563eb', '#ea580c', '#16a34a', '#eab308'],
+                    borderWidth: 1
+                }]
             },
             options: { responsive: true, maintainAspectRatio: false }
         });
     }
 
     function clearData() {
-        if (confirm("Изтриване на всичко?")) { localStorage.removeItem('financial_diary'); incomes = []; if (myChart) myChart.destroy(); if (mChart) mChart.destroy(); updateYearDropdowns(); updateUI(); }
+        if (confirm("Изтриване на всичко?")) { localStorage.removeItem('financial_diary'); incomes = []; if (myChart) myChart.destroy(); if (mChart) mChart.destroy(); if (pChart) pChart.destroy(); updateYearDropdowns(); updateUI(); }
     }
     updateYearDropdowns(); updateUI();
 </script>
