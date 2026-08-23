@@ -1,10 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="bg">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Финансов Дневник</title>
-    <!-- Връзка към мобилния манифест -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#2563eb">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -18,6 +17,7 @@
             --danger: #dc2626;
             --dark: #1e293b;
             --light: #f8fafc;
+            --warning: #ea580c;
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -36,7 +36,7 @@
             box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);
             box-sizing: border-box;
         }
-        h1, h2 { text-align: center; color: var(--dark); margin-top: 20px; font-size: 22px; }
+        h1, h2 { text-align: center; color: var(--dark); margin-top: 25px; font-size: 20px; }
         h1 { margin-top: 5px; font-size: 24px; }
         .form-group {
             display: grid;
@@ -96,16 +96,18 @@
             height: 250px;
             width: 100%;
         }
+        .btn-edit { background-color: var(--warning); color: white; padding: 4px 8px; font-size: 12px; width: auto; display: inline-block; margin-right: 5px; border-radius: 4px;}
+        .btn-delete { background-color: var(--danger); color: white; padding: 4px 8px; font-size: 12px; width: auto; display: inline-block; border-radius: 4px;}
         .clear-btn {
-            background-color: #ef4444;
-            margin-top: 20px;
+            background-color: #94a3b8;
+            margin-top: 25px;
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>📊 Финансов Дневник</h1>
+    <h1>📊 Финансов Дневник (€)</h1>
     
     <div class="form-group">
         <div>
@@ -120,30 +122,30 @@
         <div>
             <label for="month">Месец</label>
             <select id="month">
-                <option value="01">Януари</option>
-                <option value="02">Февруари</option>
-                <option value="03">Март</option>
-                <option value="04">Април</option>
-                <option value="05">Май</option>
-                <option value="06">Юни</option>
-                <option value="07">Юли</option>
-                <option value="08">Август</option>
-                <option value="09">Септември</option>
-                <option value="10">Октомври</option>
-                <option value="11">Ноември</option>
-                <option value="12">Декември</option>
+                <option value="Януари">Януари</option>
+                <option value="Февруари">Февруари</option>
+                <option value="Март">Март</option>
+                <option value="Април">Април</option>
+                <option value="Май">Май</option>
+                <option value="Юни">Юни</option>
+                <option value="Юли">Юли</option>
+                <option value="Август">Август</option>
+                <option value="Септември">Септември</option>
+                <option value="Октомври">Октомври</option>
+                <option value="Ноември">Ноември</option>
+                <option value="Декември">Декември</option>
             </select>
         </div>
         <div class="full-width">
-            <label for="amount">Приход (лв.)</label>
-            <input type="number" id="amount" placeholder="Въведи сума" min="0" step="0.01">
+            <label for="amount">Приход (€)</label>
+            <input type="number" id="amount" placeholder="Въведи сума в евро" min="0" step="0.01">
         </div>
         <div class="full-width">
-            <button onclick="addIncome()">Запиши</button>
+            <button id="submit-btn" onclick="addIncome()">Запиши</button>
         </div>
     </div>
 
-    <h2>📈 Статистика</h2>
+    <h2>📈 Годишно Сравнение</h2>
     <table>
         <thead>
             <tr>
@@ -159,12 +161,27 @@
         <canvas id="financeChart"></canvas>
     </div>
 
-    <button class="clear-btn" onclick="clearData()">Изчисти данните</button>
+    <h2>✏️ Детайлен преглед и Редактиране</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Период</th>
+                <th>Сума</th>
+                <th>Действие</th>
+            </tr>
+        </thead>
+        <tbody id="entries-table"></tbody>
+    </table>
+
+    <button class="clear-btn" onclick="clearData()">Изчисти абсолютно всички данни</button>
 </div>
 
 <script>
     let incomes = JSON.parse(localStorage.getItem('financial_diary')) || [];
     let myChart = null;
+    let editIndex = null; // Следи дали редактираме в момента
+
+    const monthOrder = ["Януари", "Февруари", "Март", "Април", "Май", "Юни", "Юли", "Август", "Септември", "Октомври", "Ноември", "Декември"];
 
     function addIncome() {
         const year = document.getElementById('year').value;
@@ -176,16 +193,50 @@
             return;
         }
 
-        const existingIndex = incomes.findIndex(i => i.year === year && i.month === month);
-        if (existingIndex !== -1) {
-            incomes[existingIndex].amount += amount;
+        if (editIndex !== null) {
+            // Ако сме в режим на редактиране, променяме стария запис
+            incomes[editIndex] = { year, month, amount };
+            editIndex = null;
+            document.getElementById('submit-btn').innerText = "Запиши";
+            document.getElementById('submit-btn').style.backgroundColor = "var(--primary)";
         } else {
-            incomes.push({ year, month, amount });
+            // Проверка за дублиращ се месец в същата година при нов запис
+            const existingIndex = incomes.findIndex(i => i.year === year && i.month === month);
+            if (existingIndex !== -1) {
+                if(confirm(`Вече имаш запис за ${month} ${year} г. Искаш ли да добавиш тази сума към съществуващата?`)) {
+                    incomes[existingIndex].amount += amount;
+                } else {
+                    return;
+                }
+            } else {
+                incomes.push({ year, month, amount });
+            }
         }
 
         saveData();
         updateUI();
         document.getElementById('amount').value = '';
+    }
+
+    function editEntry(index) {
+        editIndex = index;
+        const entry = incomes[index];
+        
+        document.getElementById('year').value = entry.year;
+        document.getElementById('month').value = entry.month;
+        document.getElementById('amount').value = entry.amount;
+        
+        document.getElementById('submit-btn').innerText = "Обнови Записа";
+        document.getElementById('submit-btn').style.backgroundColor = "var(--warning)";
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function deleteEntry(index) {
+        if (confirm("Сигурен ли си, че искаш да изтриеш този месечен запис?")) {
+            incomes.splice(index, 1);
+            saveData();
+            updateUI();
+        }
     }
 
     function calculateYearlyTotals() {
@@ -198,8 +249,15 @@
     }
 
     function updateUI() {
-        const tbody = document.getElementById('stats-table');
-        tbody.innerHTML = '';
+        // Сортиране на списъка с записи по година и месец за детайлния преглед
+        incomes.sort((a, b) => {
+            if (a.year !== b.year) return b.year - a.year; // Новите години най-отгоре
+            return monthOrder.indexOf(b.month) - monthOrder.indexOf(a.month);
+        });
+
+        // 1. Обновяване на таблицата с години
+        const tbodyStats = document.getElementById('stats-table');
+        tbodyStats.innerHTML = '';
         const yearlyTotals = calculateYearlyTotals();
         const sortedYears = Object.keys(yearlyTotals).sort();
         const chartLabels = [];
@@ -215,64 +273,3 @@
                 const prevTotal = yearlyTotals[sortedYears[index - 1]];
                 if (prevTotal > 0) {
                     const percentChange = ((currentTotal - prevTotal) / prevTotal) * 100;
-                    if (percentChange > 0) trendHtml = `<span class="badge badge-up">▲ +${percentChange.toFixed(1)}%</span>`;
-                    else if (percentChange < 0) trendHtml = `<span class="badge badge-down">▼ ${percentChange.toFixed(1)}%</span>`;
-                    else trendHtml = `<span class="badge badge-neutral">0%</span>`;
-                }
-            }
-
-            tbody.innerHTML += `<tr>
-                <td><strong>${year} г.</strong></td>
-                <td>${currentTotal.toFixed(0)} лв.</td>
-                <td>${trendHtml}</td>
-            </tr>`;
-        });
-
-        if (sortedYears.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:#64748b;">Няма данни.</td></tr>`;
-        }
-        renderChart(chartLabels, chartData);
-    }
-
-    function renderChart(labels, data) {
-        const ctx = document.getElementById('financeChart').getContext('2d');
-        if (myChart) myChart.destroy();
-        myChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Годишен приход (лв.)',
-                    data: data,
-                    backgroundColor: 'rgba(37, 99, 235, 0.2)',
-                    borderColor: 'rgba(37, 99, 235, 1)',
-                    borderWidth: 2,
-                    borderRadius: 6
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: { y: { beginAtZero: true } }
-            }
-        });
-    }
-
-    function saveData() { localStorage.setItem('financial_diary', JSON.stringify(incomes)); }
-    function clearData() { if (confirm("Изтриване на историята?")) { localStorage.removeItem('financial_diary'); incomes = []; updateUI(); } }
-
-    // Регистрация на офлайн режим (Service Worker) през Data URL
-    if ('serviceWorker' in navigator) {
-        const swCode = `
-            self.addEventListener('install', e => self.skipWaiting());
-            self.addEventListener('fetch', e => e.respondWith(fetch(e.request).catch(() => caches.match(e.request))));
-        `;
-        const blob = new Blob([swCode], {type: 'application/javascript'});
-        navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(() => {});
-    }
-
-    updateUI();
-</script>
-
-</body>
-</html>
