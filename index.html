@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Финанси €</title>
     <link rel="manifest" href="manifest.json">
-    <script src="https://jsdelivr.net"></script>
     <style>
         body { font-family: sans-serif; background: #1e40af; padding: 15px; margin: 0; }
         .box { max-width: 550px; margin: 0 auto; background: #f0f9ff; padding: 20px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); box-sizing: border-box; }
@@ -24,7 +23,6 @@
         .btn-del { background: #dc2626; color: white; padding: 4px 8px; border-radius: 4px; margin-left: 4px; border: none; }
         .toggle-btn { background: #0284c7; margin: 15px 0 10px 0; }
         .clear-btn { background: #94a3b8; margin-top: 25px; color: white; }
-        .chart-wrap { height: 220px; margin: 15px 0; background: white; padding: 10px; border-radius: 8px; box-sizing: border-box; }
         #months-container { display: none; }
     </style>
 </head>
@@ -63,7 +61,6 @@
         <thead><tr><th>Година</th><th>Общ Приход</th><th>Спрямо минала</th></tr></thead>
         <tbody id="stats-table"></tbody>
     </table>
-    <div class="chart-wrap"><canvas id="financeChart"></canvas></div>
 
     <button class="toggle-btn" onclick="toggleMonthsList()">👁️ Покажи / Скрий месечния списък</button>
     <div id="months-container">
@@ -74,22 +71,12 @@
         </table>
     </div>
 
-    <h2>📊 Детайлна статистика за година:</h2>
-    <div style="margin-bottom: 10px;">
-        <select id="filter-chart-year" onchange="updateUI()"></select>
-    </div>
-    
-    <h3>📈 Трендове по месеци</h3>
-    <div class="chart-wrap"><canvas id="monthlyChart"></canvas></div>
-    
-    <h3>🔵 Разпределение по източници</h3>
-    <div class="chart-wrap" style="height: 250px;"><canvas id="pieChart"></canvas></div>
-
     <button class="clear-btn" onclick="clearData()">ИЗЧИСТИ ВСИЧКО</button>
 </div>
+
 <script>
     let incomes = JSON.parse(localStorage.getItem('financial_diary')) || [];
-    let myChart = null; let mChart = null; let pChart = null; let editIndex = null;
+    let editIndex = null;
     const mOrder = ["Януари", "Февруари", "Март", "Април", "Май", "Юни", "Юли", "Август", "Септември", "Октомври", "Ноември", "Декември"];
 
     function addIncome() {
@@ -106,12 +93,11 @@
         } else {
             const idx = incomes.findIndex(i => i.year === year && i.month === month && i.category === category);
             if (idx !== -1) {
-                if(confirm(`Има запис за ${category} през този месец. Да добавя ли сумата?`)) incomes[idx].amount += amount;
+                if(confirm("Има такъв запис. Да добавя ли сумата?")) incomes[idx].amount += amount;
                 else return;
             } else { incomes.push({ year, month, category, amount }); }
         }
         localStorage.setItem('financial_diary', JSON.stringify(incomes));
-        updateYearDropdowns(); 
         updateUI();
         document.getElementById('amount').value = '';
     }
@@ -131,24 +117,13 @@
     function deleteEntry(uid) {
         if (confirm("Изтриване?")) {
             const idx = incomes.findIndex(i => (i.year + '-' + i.month + '-' + i.category) === uid);
-            if (idx !== -1) { incomes.splice(idx, 1); localStorage.setItem('financial_diary', JSON.stringify(incomes)); updateYearDropdowns(); updateUI(); }
+            if (idx !== -1) { incomes.splice(idx, 1); localStorage.setItem('financial_diary', JSON.stringify(incomes)); updateUI(); }
         }
     }
 
     function toggleMonthsList() {
         const c = document.getElementById('months-container');
         c.style.display = (c.style.display === "block") ? "none" : "block";
-    }
-
-    function updateYearDropdowns() {
-        const sel = document.getElementById('filter-chart-year');
-        const curr = sel.value;
-        let years = [...new Set(incomes.map(i => i.year))].sort();
-        if (years.length === 0) years = ["2026"];
-        sel.innerHTML = '';
-        years.forEach(y => { sel.innerHTML += `<option value="${y}">${y} г.</option>`; });
-        if (curr && years.includes(curr)) sel.value = curr;
-        else sel.value = years[years.length - 1];
     }
 
     function updateUI() {
@@ -193,48 +168,12 @@
             tStats.innerHTML = `<tr><td colspan="3" style="text-align:center;">Няма данни.</td></tr>`;
             tEntries.innerHTML = `<tr><td colspan="5" style="text-align:center;">Няма добавени месеци.</td></tr>`;
         }
-
-        if (myChart) myChart.destroy();
-        myChart = new Chart(document.getElementById('financeChart').getContext('2d'), {
-            type: 'bar',
-                datasets: [{ label: 'Приход (€)', data: sYears.length ? sYears.map(y => yTotals[y]) :, backgroundColor: 'rgba(29, 78, 216, 0.3)', borderColor: '#1d4ed8', borderWidth: 2, borderRadius: 6 }]
-            },
-            options: { responsive: true, maintainAspectRatio: false }
-        });
-
-        const sYear = document.getElementById('filter-chart-year').value || "2026";
-        let mData = Array(12).fill(0);
-        incomes.forEach(i => { if (i.year === sYear) { const mIdx = mOrder.indexOf(i.month); if (mIdx !== -1) mData[mIdx] += i.amount; } });
-
-        if (mChart) mChart.destroy();
-        mChart = new Chart(document.getElementById('monthlyChart').getContext('2d'), {
-            type: 'line',
-            data: {
-                labels: mOrder.map(m => m.substring(0, 3)),
-                datasets: [{ label: `Приход (€)`, data: mData, backgroundColor: 'rgba(2, 132, 199, 0.1)', borderColor: '#0284c7', borderWidth: 3, tension: 0.3, fill: true }]
-            },
-            options: { responsive: true, maintainAspectRatio: false }
-        });
-
-        let catTotals = { "Заплата": 0, "Пенсия": 0, "Социални": 0, "Бонус": 0 };
-        incomes.forEach(i => { if (i.year === sYear) { catTotals[i.category] = (catTotals[i.category] || 0) + i.amount; } });
-
-        if (pChart) pChart.destroy();
-        pChart = new Chart(document.getElementById('pieChart').getContext('2d'), {
-            type: 'pie',
-            data: {
-                labels: Object.keys(catTotals),
-                datasets: [{ data: Object.values(catTotals), backgroundColor: ['#2563eb', '#ea580c', '#16a34a', '#eab308'], borderWidth: 1 }]
-            },
-            options: { responsive: true, maintainAspectRatio: false }
-        });
     }
 
     function clearData() {
-        if (confirm("Изтриване на всичко?")) { localStorage.removeItem('financial_diary'); incomes = []; if (myChart) myChart.destroy(); if (mChart) mChart.destroy(); if (pChart) pChart.destroy(); updateYearDropdowns(); updateUI(); }
+        if (confirm("Изтриване на всичко?")) { localStorage.removeItem('financial_diary'); incomes = []; updateUI(); }
     }
     
-    updateYearDropdowns();
     updateUI();
 </script>
 </body>
