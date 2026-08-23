@@ -2,40 +2,29 @@
 <html lang="bg">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Финанси €</title>
-    <link rel="manifest" href="manifest.json">
     <style>
         body { font-family: sans-serif; background: #1e40af; padding: 15px; margin: 0; }
-        .box { max-width: 550px; margin: 0 auto; background: #f0f9ff; padding: 20px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); box-sizing: border-box; }
-        h2 { text-align: center; font-size: 18px; margin-top: 25px; margin-bottom: 12px; color: #1e3a8a; }
-        h2:first-of-type { margin-top: 5px; font-size: 22px; }
+        .box { max-width: 500px; margin: 0 auto; background: #f0f9ff; padding: 20px; border-radius: 16px; color: #1e3a8a; }
         .row { display: flex; gap: 10px; margin-bottom: 12px; }
-        select, input, button { width: 100%; padding: 12px; border: 1px solid #7dd3fc; border-radius: 8px; font-size: 16px; box-sizing: border-box; background: white; color: #1e3a8a; }
+        select, input, button { width: 100%; padding: 12px; border: 1px solid #7dd3fc; border-radius: 8px; font-size: 16px; box-sizing: border-box; }
         button { background: #1d4ed8; color: white; font-weight: bold; border: none; cursor: pointer; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; background: white; border-radius: 6px; overflow: hidden; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; background: white; border-radius: 6px; overflow: hidden; }
         th, td { padding: 10px 6px; text-align: left; border-bottom: 1px solid #e0f2fe; }
         th { background: #0284c7; color: white; }
-        .badge { padding: 2px 5px; border-radius: 4px; font-weight: bold; font-size: 11px; display: inline-block; }
+        .badge { padding: 2px 5px; border-radius: 4px; font-weight: bold; font-size: 11px; }
         .badge-up { background: #dcfce7; color: #16a34a; }
         .badge-down { background: #fee2e2; color: #dc2626; }
         .btn-edit { background: #ea580c; color: white; padding: 4px 8px; border-radius: 4px; border: none; }
-        .btn-del { background: #dc2626; color: white; padding: 4px 8px; border-radius: 4px; margin-left: 4px; border: none; }
-        .toggle-btn { background: #0284c7; margin: 15px 0 10px 0; }
-        .clear-btn { background: #94a3b8; margin-top: 25px; color: white; }
-        #months-container { display: none; }
+        .btn-del { background: #dc2626; color: white; padding: 4px 8px; border-radius: 4px; border: none; }
     </style>
 </head>
 <body>
-
 <div class="box">
-    <h2>📊 Финансов Дневник (€)</h2>
+    <h2>📊 Финанси (€)</h2>
     <div class="row">
-        <select id="year">
-            <option value="2025">2025 г.</option>
-            <option value="2026" selected>2026 г.</option>
-            <option value="2027">2027 г.</option>
-        </select>
+        <select id="year"><option value="2025">2025 г.</option><option value="2026" selected>2026 г.</option><option value="2027">2027 г.</option></select>
         <select id="month">
             <option value="Януари">Януари</option><option value="Февруари">Февруари</option><option value="Март">Март</option>
             <option value="Април">Април</option><option value="Май">Май</option><option value="Юни">Юни</option>
@@ -43,37 +32,29 @@
             <option value="Октомври">Октомври</option><option value="Ноември">Ноември</option><option value="Декември">Декември</option>
         </select>
     </div>
-    
     <div class="row">
         <select id="category">
-            <option value="Заплата">💼 Заплата</option>
-            <option value="Пенсия">👴 Пенсия</option>
-            <option value="Социални">🏛️ Социални</option>
-            <option value="Бонус">🎁 Бонус</option>
+            <option value="Заплата">💼 Заплата</option><option value="Пенсия">👴 Пенсия</option>
+            <option value="Социални">🏛️ Социални</option><option value="Бонус">🎁 Бонус</option>
         </select>
-        <input type="number" id="amount" placeholder="Сума (€)" min="0" step="0.01">
+        <input type="number" id="amount" placeholder="Сума (€)" step="0.01">
     </div>
-    
     <button id="submit-btn" onclick="addIncome()">ЗАПИШИ СУМА</button>
-
-    <h2>📈 Сравнение по Години</h2>
+    <h2>📈 По Години</h2>
     <table>
         <thead><tr><th>Година</th><th>Общ Приход</th><th>Спрямо минала</th></tr></thead>
         <tbody id="stats-table"></tbody>
     </table>
-
-    <button class="toggle-btn" onclick="toggleMonthsList()">👁️ Покажи / Скрий месечния списък</button>
-    <div id="months-container">
-        <h2>✏️ Списък по Месеци (Сравнение)</h2>
+    <button style="background:#0284c7; margin:15px 0;" onclick="document.getElementById('m-box').style.display=(document.getElementById('m-box').style.display==='block')?'none':'block'">👁️ Покажи/Скрий месеци</button>
+    <div id="m-box" style="display:none;">
+        <h2>✏️ По Месеци</h2>
         <table>
-            <thead><tr><th>Месец / Година</th><th>Източник</th><th>Сума</th><th>Спрямо м.г.</th><th>Действие</th></tr></thead>
+            <thead><tr><th>Месец</th><th>Източник</th><th>Сума</th><th>Спрямо м.г.</th><th>Действие</th></tr></thead>
             <tbody id="entries-table"></tbody>
         </table>
     </div>
-
-    <button class="clear-btn" onclick="clearData()">ИЗЧИСТИ ВСИЧКО</button>
+    <button style="background:#94a3b8; margin-top:20px;" onclick="clearData()">ИЗЧИСТИ ВСИЧКО</button>
 </div>
-
 <script>
     let incomes = JSON.parse(localStorage.getItem('financial_diary')) || [];
     let editIndex = null;
@@ -93,7 +74,7 @@
         } else {
             const idx = incomes.findIndex(i => i.year === year && i.month === month && i.category === category);
             if (idx !== -1) {
-                if(confirm("Има такъв запис. Да добавя ли сумата?")) incomes[idx].amount += amount;
+                if (confirm("Има такъв запис. Да добавя ли сумата?")) incomes[idx].amount += amount;
                 else return;
             } else { incomes.push({ year, month, category, amount }); }
         }
@@ -111,7 +92,6 @@
         document.getElementById('category').value = incomes[idx].category;
         document.getElementById('amount').value = incomes[idx].amount;
         document.getElementById('submit-btn').innerText = "ОБНОВИ ЗАПИСА";
-        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     function deleteEntry(uid) {
@@ -121,17 +101,8 @@
         }
     }
 
-    function toggleMonthsList() {
-        const c = document.getElementById('months-container');
-        c.style.display = (c.style.display === "block") ? "none" : "block";
-    }
-
     function updateUI() {
-        incomes.sort((a, b) => {
-            if (a.year !== b.year) return b.year - a.year;
-            return mOrder.indexOf(a.month) - mOrder.indexOf(b.month);
-        });
-
+        incomes.sort((a, b) => b.year !== a.year ? b.year - a.year : mOrder.indexOf(a.month) - mOrder.indexOf(b.month));
         const tStats = document.getElementById('stats-table'); tStats.innerHTML = '';
         let yTotals = {}; incomes.forEach(i => { yTotals[i.year] = (yTotals[i.year] || 0) + i.amount; });
         const sYears = Object.keys(yTotals).sort();
@@ -142,38 +113,35 @@
                 const prev = yTotals[sYears[idx - 1]];
                 if (prev > 0) {
                     const diff = ((yTotals[y] - prev) / prev) * 100;
-                    trend = diff > 0 ? `<span class="badge badge-up">▲ +${diff.toFixed(1)}%</span>` : `<span class="badge badge-down">▼ ${diff.toFixed(1)}%</span>`;
+                    trend = diff > 0 ? '<span class="badge badge-up">▲ +' + diff.toFixed(1) + '%</span>' : '<span class="badge badge-down">▼ ' + diff.toFixed(1) + '%</span>';
                 }
             }
-            tStats.innerHTML += `<tr><td><strong>${y} г.</strong></td><td>${yTotals[y].toFixed(2)} €</td><td>${trend}</td></tr>`;
+            tStats.innerHTML += '<tr><td><strong>' + y + ' г.</strong></td><td>' + yTotals[y].toFixed(2) + ' €</td><td>' + trend + '</td></tr>';
         });
 
         const tEntries = document.getElementById('entries-table'); tEntries.innerHTML = '';
-        let monthlySum = {}; incomes.forEach(i => { let key = i.year + '-' + i.month; monthlySum[key] = (monthlySum[key] || 0) + i.amount; });
+        let mSum = {}; incomes.forEach(i => { let k = i.year + '-' + i.month; mSum[k] = (mSum[k] || 0) + i.amount; });
 
         incomes.forEach((e) => {
             const pYear = (parseInt(e.year) - 1).toString();
-            const currentMonthSum = monthlySum[e.year + '-' + e.month] || 0;
-            const prevMonthSum = monthlySum[pYear + '-' + e.month] || 0;
+            const curM = mSum[e.year + '-' + e.month] || 0;
+            const preM = mSum[pYear + '-' + e.month] || 0;
             let mTrend = '---';
-            if (prevMonthSum > 0) {
-                const mDiff = ((currentMonthSum - prevMonthSum) / prevMonthSum) * 100;
-                mTrend = mDiff > 0 ? `<span class="badge badge-up">▲ +${mDiff.toFixed(1)}%</span>` : `<span class="badge badge-down">▼ ${mDiff.toFixed(1)}%</span>`;
+            if (preM > 0) {
+                const mDiff = ((curM - preM) / preM) * 100;
+                mTrend = mDiff > 0 ? '<span class="badge badge-up">▲ +' + mDiff.toFixed(1) + '%</span>' : '<span class="badge badge-down">▼ ' + mDiff.toFixed(1) + '%</span>';
             }
-            const uid = `${e.year}-${e.month}-${e.category}`;
-            tEntries.innerHTML += `<tr><td>${e.month} ${e.year} г.</td><td>${e.category}</td><td><strong>${e.amount.toFixed(2)} €</strong></td><td>${mTrend}</td><td><button class="btn-edit" onclick="editEntry('${uid}')">✏️</button><button class="btn-del" onclick="deleteEntry('${uid}')">🗑️</button></td></tr>`;
+            const uid = e.year + '-' + e.month + '-' + e.category;
+            tEntries.innerHTML += '<tr><td>' + e.month + ' ' + e.year + '</td><td>' + e.category + '</td><td><strong>' + e.amount.toFixed(2) + ' €</strong></td><td>' + mTrend + '</td><td><button class="btn-edit" onclick="editEntry(\'' + uid + '\')">✏️</button><button class="btn-del" onclick="deleteEntry(\'' + uid + '\')">🗑️</button></td></tr>';
         });
 
         if (incomes.length === 0) {
-            tStats.innerHTML = `<tr><td colspan="3" style="text-align:center;">Няма данни.</td></tr>`;
-            tEntries.innerHTML = `<tr><td colspan="5" style="text-align:center;">Няма добавени месеци.</td></tr>`;
+            tStats.innerHTML = '<tr><td colspan="3" style="text-align:center;">Няма данни.</td></tr>';
+            tEntries.innerHTML = '<tr><td colspan="5" style="text-align:center;">Няма добавени месеци.</td></tr>';
         }
     }
 
-    function clearData() {
-        if (confirm("Изтриване на всичко?")) { localStorage.removeItem('financial_diary'); incomes = []; updateUI(); }
-    }
-    
+    function clearData() { if (confirm("Изтриване на всичко?")) { localStorage.removeItem('financial_diary'); incomes = []; updateUI(); } }
     updateUI();
 </script>
 </body>
