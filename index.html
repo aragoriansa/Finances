@@ -217,7 +217,6 @@
             options: { responsive: true, maintainAspectRatio: false }
         });
 
-        // ФИКСИРАНО: Правилните източници в логиката на Pie Chart
         let catTotals = { "Заплата": 0, "Пенсия": 0, "Социални": 0, "Бонус": 0 };
         incomes.forEach(i => { if (i.year === sYear) { catTotals[i.category] = (catTotals[i.category] || 0) + i.amount; } });
 
@@ -236,10 +235,8 @@
         if (confirm("Изтриване на всичко?")) { localStorage.removeItem('financial_diary'); incomes = []; if (myChart) myChart.destroy(); if (mChart) mChart.destroy(); if (pChart) pChart.destroy(); updateYearDropdowns(); updateUI(); }
     }
     
-    window.onload = function() {
-        updateYearDropdowns();
-        updateUI();
-    };
+    updateYearDropdowns();
+    updateUI();
 </script>
 </body>
 </html>
