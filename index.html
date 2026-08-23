@@ -5,37 +5,34 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Финанси €</title>
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#0284c7">
     <script src="https://jsdelivr.net"></script>
     <style>
-        body { font-family: sans-serif; background: #e0f2fe; padding: 15px; margin: 0; }
-        .box { max-width: 550px; margin: 0 auto; background: white; padding: 20px; border-radius: 16px; box-shadow: 0 4px 10px rgba(0,0,0,0.08); box-sizing: border-box; }
-        h2 { text-align: center; font-size: 18px; margin-top: 25px; margin-bottom: 12px; color: #0369a1; }
+        body { font-family: sans-serif; background: #1e40af; padding: 15px; margin: 0; }
+        .box { max-width: 550px; margin: 0 auto; background: #f0f9ff; padding: 20px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); box-sizing: border-box; }
+        h2 { text-align: center; font-size: 18px; margin-top: 25px; margin-bottom: 12px; color: #1e3a8a; }
         h2:first-of-type { margin-top: 5px; font-size: 22px; }
         .row { display: flex; gap: 10px; margin-bottom: 12px; }
-        select, input, button { width: 100%; padding: 12px; border: 1px solid #bae6fd; border-radius: 8px; font-size: 16px; box-sizing: border-box; background: white; }
-        button { background: #0284c7; color: white; font-weight: bold; border: none; cursor: pointer; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
+        select, input, button { width: 100%; padding: 12px; border: 1px solid #7dd3fc; border-radius: 8px; font-size: 16px; box-sizing: border-box; background: white; color: #1e3a8a; }
+        button { background: #1d4ed8; color: white; font-weight: bold; border: none; cursor: pointer; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; background: white; border-radius: 6px; overflow: hidden; }
         th, td { padding: 10px 6px; text-align: left; border-bottom: 1px solid #e0f2fe; }
-        th { background: #f0f9ff; color: #0369a1; }
+        th { background: #0284c7; color: white; }
         .badge { padding: 2px 5px; border-radius: 4px; font-weight: bold; font-size: 11px; display: inline-block; }
         .badge-up { background: #dcfce7; color: #16a34a; }
         .badge-down { background: #fee2e2; color: #dc2626; }
-        .badge-neutral { background: #f1f5f9; color: #64748b; }
-        .btn-edit { background: #ea580c; color: white; padding: 4px 8px; border-radius: 4px; border: none; cursor: pointer; }
-        .btn-del { background: #dc2626; color: white; padding: 4px 8px; border-radius: 4px; margin-left: 4px; border: none; cursor: pointer; }
-        .clear-btn { background: #94a3b8; margin-top: 25px; }
-        .chart-wrap { height: 220px; margin: 15px 0; }
+        .btn-edit { background: #ea580c; color: white; padding: 4px 8px; border-radius: 4px; border: none; }
+        .btn-del { background: #dc2626; color: white; padding: 4px 8px; border-radius: 4px; margin-left: 4px; border: none; }
+        .toggle-btn { background: #0284c7; margin: 15px 0 10px 0; }
+        .clear-btn { background: #94a3b8; margin-top: 25px; color: white; }
+        .chart-wrap { height: 220px; margin: 15px 0; background: white; padding: 10px; border-radius: 8px; box-sizing: border-box; }
+        #months-container { display: none; }
     </style>
 </head>
 <body>
-
 <div class="box">
     <h2>📊 Финансов Дневник (€)</h2>
-    
     <div class="row">
         <select id="year">
-            <option value="2024">2024 г.</option>
             <option value="2025">2025 г.</option>
             <option value="2026" selected>2026 г.</option>
             <option value="2027">2027 г.</option>
@@ -47,7 +44,6 @@
             <option value="Октомври">Октомври</option><option value="Ноември">Ноември</option><option value="Декември">Декември</option>
         </select>
     </div>
-    
     <div style="margin-bottom: 12px;"><input type="number" id="amount" placeholder="Въведи приход (€)" min="0" step="0.01"></div>
     <button id="submit-btn" onclick="addIncome()">ЗАПИШИ СУМА</button>
 
@@ -56,21 +52,27 @@
         <thead><tr><th>Година</th><th>Общ Приход</th><th>Спрямо минала</th></tr></thead>
         <tbody id="stats-table"></tbody>
     </table>
-
     <div class="chart-wrap"><canvas id="financeChart"></canvas></div>
 
-    <h2>✏️ Списък по Месеци (Сравнение)</h2>
-    <table>
-        <thead><tr><th>Месец / Година</th><th>Сума</th><th>Спрямо м.г.</th><th>Действие</th></tr></thead>
-        <tbody id="entries-table"></tbody>
-    </table>
-    <button class="clear-btn" onclick="clearData()">ИЗЧИСТИ Всичко</button>
-</div>
+    <button class="toggle-btn" onclick="toggleMonthsList()">👁️ Покажи / Скрий месечния списък</button>
+    <div id="months-container">
+        <h2>✏️ Списък по Месеци (Сравнение)</h2>
+        <table>
+            <thead><tr><th>Месец / Година</th><th>Сума</th><th>Спрямо м.г.</th><th>Действие</th></tr></thead>
+            <tbody id="entries-table"></tbody>
+        </table>
+    </div>
 
+    <h2>📊 Месечно разпределение за:</h2>
+    <div style="margin-bottom: 10px;"><select id="filter-chart-year" onchange="updateUI()"></select></div>
+    <div class="chart-wrap"><canvas id="monthlyChart"></canvas></div>
+
+    <button class="clear-btn" onclick="clearData()">ИЗЧИСТИ ВСИЧКО</button>
+</div>
 <script>
     let incomes = JSON.parse(localStorage.getItem('financial_diary')) || [];
-    let myChart = null; let editIndex = null;
-    const monthOrder = ["Януари", "Февруари", "Март", "Април", "Май", "Юни", "Юли", "Август", "Септември", "Октомври", "Ноември", "Декември"];
+    let myChart = null; let mChart = null; let editIndex = null;
+    const mOrder = ["Януари", "Февруари", "Март", "Април", "Май", "Юни", "Юли", "Август", "Септември", "Октомври", "Ноември", "Декември"];
 
     function addIncome() {
         const year = document.getElementById('year').value;
@@ -90,7 +92,7 @@
             } else { incomes.push({ year, month, amount }); }
         }
         localStorage.setItem('financial_diary', JSON.stringify(incomes));
-        updateUI();
+        updateYearDropdowns(); updateUI();
         document.getElementById('amount').value = '';
     }
 
@@ -112,61 +114,90 @@
         }
     }
 
+    function toggleMonthsList() {
+        const c = document.getElementById('months-container');
+        c.style.display = (c.style.display === "block") ? "none" : "block";
+    }
+
+    function updateYearDropdowns() {
+        const sel = document.getElementById('filter-chart-year');
+        const curr = sel.value;
+        let years = [...new Set(incomes.map(i => i.year))].sort();
+        if (years.length === 0) years = ["2026"];
+        sel.innerHTML = '';
+        years.forEach(y => { sel.innerHTML += `<option value="${y}" ${y === curr ? 'selected' : ''}>${y} г.</option>`; });
+        if (!curr && sel.firstChild) sel.firstChild.setAttribute('selected', 'selected');
+    }
+
     function updateUI() {
         incomes.sort((a, b) => {
             if (a.year !== b.year) return b.year - a.year;
-            return monthOrder.indexOf(a.month) - monthOrder.indexOf(b.month);
+            return mOrder.indexOf(a.month) - mOrder.indexOf(b.month);
         });
 
-        const tbodyStats = document.getElementById('stats-table'); tbodyStats.innerHTML = '';
-        let yearlyTotals = {}; incomes.forEach(i => { yearlyTotals[i.year] = (yearlyTotals[i.year] || 0) + i.amount; });
-        const sortedYears = Object.keys(yearlyTotals).sort();
+        const tStats = document.getElementById('stats-table'); tStats.innerHTML = '';
+        let yTotals = {}; incomes.forEach(i => { yTotals[i.year] = (yTotals[i.year] || 0) + i.amount; });
+        const sYears = Object.keys(yTotals).sort();
 
-        sortedYears.forEach((year, index) => {
+        sYears.forEach((y, idx) => {
             let trend = '---';
-            if (index > 0) {
-                const prev = yearlyTotals[sortedYears[index - 1]];
+            if (idx > 0) {
+                const prev = yTotals[sYears[idx - 1]];
                 if (prev > 0) {
-                    const change = ((yearlyTotals[year] - prev) / prev) * 100;
-                    trend = change > 0 ? `▲ +${change.toFixed(1)}%` : `▼ ${change.toFixed(1)}%`;
+                    const diff = ((yTotals[y] - prev) / prev) * 100;
+                    trend = diff > 0 ? `<span class="badge badge-up">▲ +${diff.toFixed(1)}%</span>` : `<span class="badge badge-down">▼ ${diff.toFixed(1)}%</span>`;
                 }
             }
-            tbodyStats.innerHTML += `<tr><td><strong>${year} г.</strong></td><td>${yearlyTotals[year].toFixed(2)} €</td><td>${trend}</td></tr>`;
+            tStats.innerHTML += `<tr><td><strong>${y} г.</strong></td><td>${yTotals[y].toFixed(2)} €</td><td>${trend}</td></tr>`;
         });
 
-        const tbodyEntries = document.getElementById('entries-table'); tbodyEntries.innerHTML = '';
+        const tEntries = document.getElementById('entries-table'); tEntries.innerHTML = '';
         incomes.forEach((e) => {
-            const prevYearStr = (parseInt(e.year) - 1).toString();
-            const prevMatch = incomes.find(i => i.year === prevYearStr && i.month === e.month);
+            const pYear = (parseInt(e.year) - 1).toString();
+            const pMatch = incomes.find(i => i.year === pYear && i.month === e.month);
             let mTrend = '---';
-            if (prevMatch && prevMatch.amount > 0) {
-                const mChange = ((e.amount - prevMatch.amount) / prevMatch.amount) * 100;
-                mTrend = mChange > 0 ? `▲ +${mChange.toFixed(1)}%` : `▼ ${mChange.toFixed(1)}%`;
+            if (pMatch && pMatch.amount > 0) {
+                const mDiff = ((e.amount - pMatch.amount) / pMatch.amount) * 100;
+                mTrend = mDiff > 0 ? `<span class="badge badge-up">▲ +${mDiff.toFixed(1)}%</span>` : `<span class="badge badge-down">▼ ${mDiff.toFixed(1)}%</span>`;
             }
             const uid = `${e.year}-${e.month}`;
-            tbodyEntries.innerHTML += `<tr><td>${e.month} ${e.year} г.</td><td><strong>${e.amount.toFixed(2)} €</strong></td><td>${mTrend}</td><td><button class="btn-edit" onclick="editEntry('${uid}')">✏️</button><button class="btn-del" onclick="deleteEntry('${uid}')">🗑️</button></td></tr>`;
+            tEntries.innerHTML += `<tr><td>${e.month} ${e.year} г.</td><td><strong>${e.amount.toFixed(2)} €</strong></td><td>${mTrend}</td><td><button class="btn-edit" onclick="editEntry('${uid}')">✏️</button><button class="btn-del" onclick="deleteEntry('${uid}')">🗑️</button></td></tr>`;
         });
 
         if (incomes.length === 0) {
-            tbodyStats.innerHTML = `<tr><td colspan="3" style="text-align:center;">Няма данни.</td></tr>`;
-            tbodyEntries.innerHTML = `<tr><td colspan="4" style="text-align:center;">Няма добавени месеци.</td></tr>`;
+            tStats.innerHTML = `<tr><td colspan="3" style="text-align:center;">Няма данни.</td></tr>`;
+            tEntries.innerHTML = `<tr><td colspan="4" style="text-align:center;">Няма добавени месеци.</td></tr>`;
         }
 
         if (myChart) myChart.destroy();
         myChart = new Chart(document.getElementById('financeChart').getContext('2d'), {
             type: 'bar',
             data: {
-                labels: sortedYears.map(y => y + " г."),
-                datasets: [{ label: 'Приход (€)', data: sortedYears.map(y => yearlyTotals[y]), backgroundColor: 'rgba(2, 132, 199, 0.2)', borderColor: '#0284c7', borderWidth: 2, borderRadius: 6 }]
+                labels: sYears.map(y => y + " г."),
+                datasets: [{ label: 'Приход (€)', data: sYears.map(y => yTotals[y]), backgroundColor: 'rgba(29, 78, 216, 0.3)', borderColor: '#1d4ed8', borderWidth: 2, borderRadius: 6 }]
+            },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+
+        const sYear = document.getElementById('filter-chart-year').value || "2026";
+        let mData = Array(12).fill(0);
+        incomes.forEach(i => { if (i.year === sYear) { const mIdx = mOrder.indexOf(i.month); if (mIdx !== -1) mData[mIdx] = i.amount; } });
+
+        if (mChart) mChart.destroy();
+        mChart = new Chart(document.getElementById('monthlyChart').getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: mOrder.map(m => m.substring(0, 3)),
+                datasets: [{ label: `За ${sYear} г. (€)`, data: mData, backgroundColor: 'rgba(2, 132, 199, 0.1)', borderColor: '#0284c7', borderWidth: 3, tension: 0.3, fill: true }]
             },
             options: { responsive: true, maintainAspectRatio: false }
         });
     }
 
     function clearData() {
-        if (confirm("Изтриване на всичко?")) { localStorage.removeItem('financial_diary'); incomes = []; if (myChart) myChart.destroy(); updateUI(); }
+        if (confirm("Изтриване на всичко?")) { localStorage.removeItem('financial_diary'); incomes = []; if (myChart) myChart.destroy(); if (mChart) mChart.destroy(); updateYearDropdowns(); updateUI(); }
     }
-    updateUI();
+    updateYearDropdowns(); updateUI();
 </script>
 </body>
 </html>
