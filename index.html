@@ -49,9 +49,9 @@
     <div class="row">
         <select id="category">
             <option value="Заплата">💼 Заплата</option>
-            <option value="Бизнес">📈 Бизнес</option>
-            <option value="Инвестиции">🪙 Инвестиции</option>
-            <option value="Други">✨ Други</option>
+            <option value="Пенсия">👴 Пенсия</option>
+            <option value="Социални">🏛️ Социални</option>
+            <option value="Бонус">🎁 Бонус</option>
         </select>
         <input type="number" id="amount" placeholder="Сума (€)" min="0" step="0.01">
     </div>
@@ -69,12 +69,12 @@
     <div id="months-container">
         <h2>✏️ Списък по Месеци (Сравнение)</h2>
         <table>
-            <thead><tr><th>Месец / Година</th><th>Категория</th><th>Сума</th><th>Спрямо м.г.</th><th>Действие</th></tr></thead>
+            <thead><tr><th>Месец / Година</th><th>Източник</th><th>Сума</th><th>Спрямо м.г.</th><th>Действие</th></tr></thead>
             <tbody id="entries-table"></tbody>
         </table>
     </div>
 
-    <h2>📊 Статистика за година:</h2>
+    <h2>📊 Детайлна статистика за година:</h2>
     <div style="margin-bottom: 10px;">
         <select id="filter-chart-year" onchange="updateUI()"></select>
     </div>
@@ -103,7 +103,6 @@
             editIndex = null;
             document.getElementById('submit-btn').innerText = "ЗАПИШИ СУМА";
         } else {
-            // Проверка за същия месец, година И категория
             const idx = incomes.findIndex(i => i.year === year && i.month === month && i.category === category);
             if (idx !== -1) {
                 if(confirm(`Има запис за ${category} през този месец. Да добавя ли сумата?`)) incomes[idx].amount += amount;
@@ -157,7 +156,6 @@
             return mOrder.indexOf(a.month) - mOrder.indexOf(b.month);
         });
 
-        // 1. Годишна статистика
         const tStats = document.getElementById('stats-table'); tStats.innerHTML = '';
         let yTotals = {}; incomes.forEach(i => { yTotals[i.year] = (yTotals[i.year] || 0) + i.amount; });
         const sYears = Object.keys(yTotals).sort();
@@ -174,21 +172,13 @@
             tStats.innerHTML += `<tr><td><strong>${y} г.</strong></td><td>${yTotals[y].toFixed(2)} €</td><td>${trend}</td></tr>`;
         });
 
-        // 2. Месечен списък със Сравнение (сумирано по месеци за тренда)
         const tEntries = document.getElementById('entries-table'); tEntries.innerHTML = '';
-        
-        // Помощна структура за общо по месеци
-        let monthlySum = {}; 
-        incomes.forEach(i => {
-            let key = i.year + '-' + i.month;
-            monthlySum[key] = (monthlySum[key] || 0) + i.amount;
-        });
+        let monthlySum = {}; incomes.forEach(i => { let key = i.year + '-' + i.month; monthlySum[key] = (monthlySum[key] || 0) + i.amount; });
 
         incomes.forEach((e) => {
             const pYear = (parseInt(e.year) - 1).toString();
             const currentMonthSum = monthlySum[e.year + '-' + e.month] || 0;
             const prevMonthSum = monthlySum[pYear + '-' + e.month] || 0;
-            
             let mTrend = '---';
             if (prevMonthSum > 0) {
                 const mDiff = ((currentMonthSum - prevMonthSum) / prevMonthSum) * 100;
@@ -203,20 +193,17 @@
             tEntries.innerHTML = `<tr><td colspan="5" style="text-align:center;">Няма добавени месеци.</td></tr>`;
         }
 
-        // 3. Годишна графика
         if (myChart) myChart.destroy();
         myChart = new Chart(document.getElementById('financeChart').getContext('2d'), {
             type: 'bar',
             data: {
-                labels: sYears.map(y => y + " г."),
-                datasets: [{ label: 'Приход (€)', data: sYears.map(y => yTotals[y]), backgroundColor: 'rgba(29, 78, 216, 0.3)', borderColor: '#1d4ed8', borderWidth: 2, borderRadius: 6 }]
+                labels: sYears.length ? sYears.map(y => y + " г.") : ["Няма данни"],
+                datasets: [{ label: 'Приход (€)', data: sYears.length ? sYears.map(y => yTotals[y]) :, backgroundColor: 'rgba(29, 78, 216, 0.3)', borderColor: '#1d4ed8', borderWidth: 2, borderRadius: 6 }]
             },
             options: { responsive: true, maintainAspectRatio: false }
         });
 
         const sYear = document.getElementById('filter-chart-year').value || "2026";
-        
-        // 4. Месечна линейна графика
         let mData = Array(12).fill(0);
         incomes.forEach(i => { if (i.year === sYear) { const mIdx = mOrder.indexOf(i.month); if (mIdx !== -1) mData[mIdx] += i.amount; } });
 
@@ -230,8 +217,8 @@
             options: { responsive: true, maintainAspectRatio: false }
         });
 
-        // 5. Нова Кръгова Графика (Pie Chart) за категориите
-        let catTotals = { "Заплата": 0, "Бизнес": 0, "Инвестиции": 0, "Други": 0 };
+        // ФИКСИРАНО: Правилните източници в логиката на Pie Chart
+        let catTotals = { "Заплата": 0, "Пенсия": 0, "Социални": 0, "Бонус": 0 };
         incomes.forEach(i => { if (i.year === sYear) { catTotals[i.category] = (catTotals[i.category] || 0) + i.amount; } });
 
         if (pChart) pChart.destroy();
@@ -239,11 +226,7 @@
             type: 'pie',
             data: {
                 labels: Object.keys(catTotals),
-                datasets: [{
-                    data: Object.values(catTotals),
-                    backgroundColor: ['#2563eb', '#16a34a', '#eab308', '#a855f7'],
-                    borderWidth: 1
-                }]
+                datasets: [{ data: Object.values(catTotals), backgroundColor: ['#2563eb', '#ea580c', '#16a34a', '#eab308'], borderWidth: 1 }]
             },
             options: { responsive: true, maintainAspectRatio: false }
         });
@@ -252,7 +235,11 @@
     function clearData() {
         if (confirm("Изтриване на всичко?")) { localStorage.removeItem('financial_diary'); incomes = []; if (myChart) myChart.destroy(); if (mChart) mChart.destroy(); if (pChart) pChart.destroy(); updateYearDropdowns(); updateUI(); }
     }
-    updateYearDropdowns(); updateUI();
+    
+    window.onload = function() {
+        updateYearDropdowns();
+        updateUI();
+    };
 </script>
 </body>
 </html>
