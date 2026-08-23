@@ -1,0 +1,278 @@
+﻿<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Финансов Дневник</title>
+    <!-- Връзка към мобилния манифест -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2563eb">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <script src="https://jsdelivr.net"></script>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --success: #16a34a;
+            --danger: #dc2626;
+            --dark: #1e293b;
+            --light: #f8fafc;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--light);
+            color: var(--dark);
+            margin: 0;
+            padding: 10px;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 15px;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);
+            box-sizing: border-box;
+        }
+        h1, h2 { text-align: center; color: var(--dark); margin-top: 20px; font-size: 22px; }
+        h1 { margin-top: 5px; font-size: 24px; }
+        .form-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+            background: #f1f5f9;
+            padding: 15px;
+            border-radius: 12px;
+        }
+        .form-group .full-width {
+            grid-column: span 2;
+        }
+        label { font-weight: 600; font-size: 13px; margin-bottom: 4px; display: block; }
+        select, input, button {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 16px;
+            box-sizing: border-box;
+            background: white;
+        }
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 5px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+        th, td {
+            padding: 10px 8px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        th { background-color: #f1f5f9; }
+        .badge {
+            padding: 3px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 12px;
+            display: inline-block;
+        }
+        .badge-up { background-color: #dcfce7; color: var(--success); }
+        .badge-down { background-color: #fee2e2; color: var(--danger); }
+        .badge-neutral { background-color: #f1f5f9; color: #64748b; }
+        .chart-container {
+            position: relative;
+            margin: 20px auto;
+            height: 250px;
+            width: 100%;
+        }
+        .clear-btn {
+            background-color: #ef4444;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>📊 Финансов Дневник</h1>
+    
+    <div class="form-group">
+        <div>
+            <label for="year">Година</label>
+            <select id="year">
+                <option value="2025">2025 г.</option>
+                <option value="2026" selected>2026 г.</option>
+                <option value="2027">2027 г.</option>
+                <option value="2028">2028 г.</option>
+            </select>
+        </div>
+        <div>
+            <label for="month">Месец</label>
+            <select id="month">
+                <option value="01">Януари</option>
+                <option value="02">Февруари</option>
+                <option value="03">Март</option>
+                <option value="04">Април</option>
+                <option value="05">Май</option>
+                <option value="06">Юни</option>
+                <option value="07">Юли</option>
+                <option value="08">Август</option>
+                <option value="09">Септември</option>
+                <option value="10">Октомври</option>
+                <option value="11">Ноември</option>
+                <option value="12">Декември</option>
+            </select>
+        </div>
+        <div class="full-width">
+            <label for="amount">Приход (лв.)</label>
+            <input type="number" id="amount" placeholder="Въведи сума" min="0" step="0.01">
+        </div>
+        <div class="full-width">
+            <button onclick="addIncome()">Запиши</button>
+        </div>
+    </div>
+
+    <h2>📈 Статистика</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Година</th>
+                <th>Приход</th>
+                <th>Спрямо предходна</th>
+            </tr>
+        </thead>
+        <tbody id="stats-table"></tbody>
+    </table>
+
+    <div class="chart-container">
+        <canvas id="financeChart"></canvas>
+    </div>
+
+    <button class="clear-btn" onclick="clearData()">Изчисти данните</button>
+</div>
+
+<script>
+    let incomes = JSON.parse(localStorage.getItem('financial_diary')) || [];
+    let myChart = null;
+
+    function addIncome() {
+        const year = document.getElementById('year').value;
+        const month = document.getElementById('month').value;
+        const amount = parseFloat(document.getElementById('amount').value);
+
+        if (isNaN(amount) || amount <= 0) {
+            alert("Моля, въведете валидна сума.");
+            return;
+        }
+
+        const existingIndex = incomes.findIndex(i => i.year === year && i.month === month);
+        if (existingIndex !== -1) {
+            incomes[existingIndex].amount += amount;
+        } else {
+            incomes.push({ year, month, amount });
+        }
+
+        saveData();
+        updateUI();
+        document.getElementById('amount').value = '';
+    }
+
+    function calculateYearlyTotals() {
+        let yearlyTotals = {};
+        incomes.forEach(item => {
+            if (!yearlyTotals[item.year]) yearlyTotals[item.year] = 0;
+            yearlyTotals[item.year] += item.amount;
+        });
+        return yearlyTotals;
+    }
+
+    function updateUI() {
+        const tbody = document.getElementById('stats-table');
+        tbody.innerHTML = '';
+        const yearlyTotals = calculateYearlyTotals();
+        const sortedYears = Object.keys(yearlyTotals).sort();
+        const chartLabels = [];
+        const chartData = [];
+
+        sortedYears.forEach((year, index) => {
+            const currentTotal = yearlyTotals[year];
+            chartLabels.push(year + " г.");
+            chartData.push(currentTotal);
+            let trendHtml = '<span class="badge badge-neutral">---</span>';
+
+            if (index > 0) {
+                const prevTotal = yearlyTotals[sortedYears[index - 1]];
+                if (prevTotal > 0) {
+                    const percentChange = ((currentTotal - prevTotal) / prevTotal) * 100;
+                    if (percentChange > 0) trendHtml = `<span class="badge badge-up">▲ +${percentChange.toFixed(1)}%</span>`;
+                    else if (percentChange < 0) trendHtml = `<span class="badge badge-down">▼ ${percentChange.toFixed(1)}%</span>`;
+                    else trendHtml = `<span class="badge badge-neutral">0%</span>`;
+                }
+            }
+
+            tbody.innerHTML += `<tr>
+                <td><strong>${year} г.</strong></td>
+                <td>${currentTotal.toFixed(0)} лв.</td>
+                <td>${trendHtml}</td>
+            </tr>`;
+        });
+
+        if (sortedYears.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:#64748b;">Няма данни.</td></tr>`;
+        }
+        renderChart(chartLabels, chartData);
+    }
+
+    function renderChart(labels, data) {
+        const ctx = document.getElementById('financeChart').getContext('2d');
+        if (myChart) myChart.destroy();
+        myChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Годишен приход (лв.)',
+                    data: data,
+                    backgroundColor: 'rgba(37, 99, 235, 0.2)',
+                    borderColor: 'rgba(37, 99, 235, 1)',
+                    borderWidth: 2,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+    }
+
+    function saveData() { localStorage.setItem('financial_diary', JSON.stringify(incomes)); }
+    function clearData() { if (confirm("Изтриване на историята?")) { localStorage.removeItem('financial_diary'); incomes = []; updateUI(); } }
+
+    // Регистрация на офлайн режим (Service Worker) през Data URL
+    if ('serviceWorker' in navigator) {
+        const swCode = `
+            self.addEventListener('install', e => self.skipWaiting());
+            self.addEventListener('fetch', e => e.respondWith(fetch(e.request).catch(() => caches.match(e.request))));
+        `;
+        const blob = new Blob([swCode], {type: 'application/javascript'});
+        navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(() => {});
+    }
+
+    updateUI();
+</script>
+
+</body>
+</html>

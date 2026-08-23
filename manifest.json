@@ -1,0 +1,9 @@
+{
+  "name": "Финансов Дневник",
+  "short_name": "Финанси",
+  "start_url": "finance.html",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#2563eb",
+  "orientation": "portrait"
+}
