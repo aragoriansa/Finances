@@ -86,7 +86,8 @@
     <div class="chart-wrap" style="height: 250px;"><canvas id="pieChart"></canvas></div>
 
     <button class="clear-btn" onclick="clearData()">ИЗЧИСТИ ВСИЧКО</button>
-</div><script>
+</div>
+<script>
     let incomes = JSON.parse(localStorage.getItem('financial_diary')) || [];
     let myChart = null; let mChart = null; let pChart = null; let editIndex = null;
     const mOrder = ["Януари", "Февруари", "Март", "Април", "Май", "Юни", "Юли", "Август", "Септември", "Октомври", "Ноември", "Декември"];
