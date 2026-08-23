@@ -197,8 +197,6 @@
         if (myChart) myChart.destroy();
         myChart = new Chart(document.getElementById('financeChart').getContext('2d'), {
             type: 'bar',
-            data: {
-                labels: sYears.length ? sYears.map(y => y + " г.") : ["Няма данни"],
                 datasets: [{ label: 'Приход (€)', data: sYears.length ? sYears.map(y => yTotals[y]) :, backgroundColor: 'rgba(29, 78, 216, 0.3)', borderColor: '#1d4ed8', borderWidth: 2, borderRadius: 6 }]
             },
             options: { responsive: true, maintainAspectRatio: false }
